@@ -18,7 +18,7 @@ Proyek ini merupakan fork yang dibangun di atas Baileys oleh WhiskeySockets.
 </div>
 
 ---
-
+```markdown
 ## Daftar Isi
 
 - [Instalasi](#instalasi)
