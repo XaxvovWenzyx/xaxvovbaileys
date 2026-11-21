@@ -1,18 +1,15 @@
----
-
+```markdown
 <div align='center'>GrenXbaileys</div>
 
 <p align="center">
-
   <img src="https://ganga--link--ghhzdp9sv8hk.code.run/i/6r8d73n1.jpg" width="180" alt="GrenXbaileys"/>
-
 </p>
 
 <div align='center'>
 
-https://img.shields.io/badge/license-MIT-blue.svg
-https://img.shields.io/badge/source-GitHub-black.svg
-https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg
+![license](https://img.shields.io/badge/license-MIT-blue.svg)
+![source](https://img.shields.io/badge/source-GitHub-black.svg)
+![node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)
 
 Pustaka WebSockets untuk berinteraksi dengan WhatsApp Web, dikelola dengan merek GrenXbaileys.
 Proyek ini merupakan fork yang dibangun di atas Baileys oleh WhiskeySockets.
@@ -21,9 +18,27 @@ Proyek ini merupakan fork yang dibangun di atas Baileys oleh WhiskeySockets.
 
 ---
 
-Instalasi
+## Daftar Isi
 
-Membutuhkan Node.js 20+ (paket ini hanya ESM; lihat Impor).
+- [Instalasi](#instalasi)
+- [Impor](#impor)
+- [Menghubungkan ke WhatsApp](#menghubungkan-ke-whatsapp)
+- [Anti-Ban Sender](#anti-ban-sender)
+- [Keep-Alive & Reconnect](#keep-alive--reconnect)
+- [Menyimpan Data](#menyimpan-data)
+- [Mengirim Pesan](#mengirim-pesan)
+- [Helper sendMessage Sederhana](#helper-sendmessage-sederhana)
+- [Fitur Gabungan (1.1.0)](#fitur-gabungan-110)
+- [Catatan Chat Pribadi vs Grup](#catatan-chat-pribadi-vs-grup)
+- [Kredit](#kredit)
+- [Kontribusi](#kontribusi)
+- [Disclaimer](#disclaimer)
+
+---
+
+## Instalasi
+
+Membutuhkan Node.js 20+ (paket ini hanya ESM; lihat [Impor](#impor)).
 
 Dari npm registry (setelah dipublikasikan):
 
@@ -63,6 +78,8 @@ Kamu juga bisa pin ke branch atau commit tertentu:
 ```bash
 npm install github:GrenXbaileys/Baileys#main
 ```
+
+---
 
 Impor
 
@@ -136,6 +153,122 @@ async function start() {
 start();
 ```
 
+---
+
+Anti-Ban Sender
+
+Fitur ini mendeteksi sinyal banned / restricted / blocked dari server WhatsApp untuk nomor
+pengirim (sender). Jika terdeteksi, koneksi langsung dilepas otomatis dan user diberi peringatan
+agar segera mengganti/melepas sender, sehingga bot tidak terus memakai nomor yang sudah dibatasi.
+
+Cara Kerja
+
+· Deteksi dilakukan di handler CB:stream:error dan CB:failure.
+· Keyword yang dianggap banned: banned, ban, restricted, blocked, account_locked,
+  sender_banned, spam.
+· Status code 401 (loggedOut) dan 403 juga dianggap banned.
+· Saat terdeteksi, socket memancarkan event connection.update dengan payload senderBanned,
+  lalu memanggil end() dengan status loggedOut agar koneksi langsung diputus.
+
+Menangkap Peringatan
+
+```javascript
+client.ev.on('connection.update', (update) => {
+  if (update.senderBanned) {
+    console.error('⚠️ SENDER DIBAN:', update.senderBanned.reason);
+    console.error('Detail:', update.senderBanned.detail);
+    console.error('Pesan:', update.senderBanned.message);
+    // Lakukan tindakan: lepas sender, ganti nomor, matikan bot, kirim notifikasi ke admin, dll.
+  }
+
+  if (update.connection === 'close') {
+    const statusCode = update.lastDisconnect?.error?.output?.statusCode;
+    if (statusCode === DisconnectReason.loggedOut) {
+      // Jangan reconnect. Sender sudah dilepas / sesi tidak valid.
+      console.log('Koneksi ditutup (loggedOut). Sender dilepas.');
+    }
+  }
+});
+```
+
+Payload senderBanned
+
+Field Tipe Keterangan
+senderBanned boolean Selalu true saat event ini dipancarkan
+reason string Alasan singkat (mis. stream_error, failure, atau reason asli)
+detail object Node/attrs asli dari server WhatsApp
+message string Pesan peringatan siap tampil untuk user/admin
+timestamp Date Waktu kejadian
+
+Rekomendasi Tindakan
+
+· Lepas sender dari daftar nomor aktif di sistem kamu.
+· Jangan reconnect dengan kredensial yang sama; hapus folder auth bila perlu.
+· Ganti nomor baru untuk bot.
+· Kirim notifikasi ke admin/owner (mis. via webhook, Telegram, atau channel lain).
+· Hentikan pengiriman massal sementara untuk menghindari ban berantai.
+
+---
+
+Keep-Alive & Reconnect
+
+Keep-Alive Bawaan (Lebih Toleran)
+
+Logika keep-alive di lib/Socket/socket.js sudah diperbaiki agar tidak mudah memutus koneksi:
+
+· Timeout limit diubah dari keepAliveIntervalMs + 5000 menjadi
+  (keepAliveIntervalMs * 2) + 10000.
+· Jika pengiriman ping gagal, koneksi tidak langsung diputus; hanya dicatat sebagai warning.
+  Koneksi baru diputus jika waktu timeoutLimit benar-benar terlampaui.
+
+Atur interval di makeWASocket:
+
+```javascript
+const client = makeWASocket({
+  keepAliveIntervalMs: 60000, // 60 detik (default 30 detik)
+  // opsi lainnya
+});
+```
+
+Reconnect Otomatis (Modul Pendukung)
+
+Library ini tidak melakukan reconnect otomatis. Untuk koneksi yang lebih stabil, gunakan modul
+pihak ketiga di lapisan aplikasi:
+
+baileys-keep-alive
+
+Menjaga koneksi tetap hidup dengan exponential backoff dan heartbeat.
+
+```javascript
+import { keepAlive } from 'baileys-keep-alive';
+
+const ka = keepAlive(sock, {
+  reconnectFactory: async () => makeWASocket({ /* auth state Anda */ }),
+  heartbeat: { intervalMs: 30000 }
+});
+```
+
+baileys-antiban
+
+Melindungi sesi dari reconnect loop dan korupsi kredensial.
+
+```javascript
+import { reconnectThrottle } from 'baileys-antiban';
+
+const throttle = reconnectThrottle({ cooldownMs: 5000, maxConsecutive: 5 });
+// Gunakan throttle.attemptReconnect() di handler connection.update
+```
+
+Hal Krusial yang Sering Terlewat
+
+1. Selalu simpan kredensial: dengarkan event creds.update dan panggil saveCreds setiap kali
+   event terpicu.
+2. Jangan reconnect saat loggedOut (401): hapus folder auth dan minta scan QR baru.
+3. Tangani restartRequired (515): setelah scan QR, WhatsApp memaksa disconnect. Ini normal;
+   lakukan reconnect, bukan menganggapnya error.
+
+---
+
 Menyimpan Data
 
 ```javascript
@@ -158,9 +291,11 @@ client.ev.on('contacts.upsert', () => {
 });
 ```
 
+---
+
 Mengirim Pesan
 
-Mengirim / meneruskan pesan dengan noSelfSync
+Mengirim / Meneruskan Pesan dengan noSelfSync
 
 noSelfSync adalah opsi relayMessage (hanya untuk chat pribadi/1-on-1) yang mengontrol apakah
 pesan juga disinkronkan ke perangkat lain milikmu sendiri (ponsel lain/sesi WhatsApp Web yang
@@ -278,7 +413,7 @@ await client.sendMessage(m.chat, {
 });
 ```
 
-Mengirim label anggota
+Mengirim Label Anggota
 
 ```javascript
 await client.sendMessage(m.chat, {
@@ -288,7 +423,7 @@ await client.sendMessage(m.chat, {
 });
 ```
 
-Mengirim pesan ke anggota grup
+Mengirim Pesan ke Anggota Grup
 
 ```javascript
 await client.sendMessageMembers(m.chat, {
@@ -298,9 +433,11 @@ await client.sendMessageMembers(m.chat, {
 }, {});
 ```
 
+---
+
 Helper sendMessage Sederhana
 
-Mengirim teks
+Mengirim Teks
 
 ```javascript
 await client.sendText(m.chat, "Halo!", {
@@ -319,7 +456,7 @@ await client.sendText(m.chat, "Halo!", {
 });
 ```
 
-Mengirim gambar
+Mengirim Gambar
 
 ```javascript
 await client.sendImage(m.chat, { url: "./grenxbaileysimg.jpg" }, "Caption", {
@@ -338,7 +475,7 @@ await client.sendImage(m.chat, { url: "./grenxbaileysimg.jpg" }, "Caption", {
 });
 ```
 
-Mengirim video
+Mengirim Video
 
 ```javascript
 await client.sendVideo(m.chat, { url: "./video.mp4" }, "Caption", {
@@ -357,7 +494,7 @@ await client.sendVideo(m.chat, { url: "./video.mp4" }, "Caption", {
 });
 ```
 
-Mengirim audio
+Mengirim Audio
 
 ```javascript
 await client.sendAudio(m.chat, { url: "./grenxbaileysaudio.mp3" }, {
@@ -376,7 +513,7 @@ await client.sendAudio(m.chat, { url: "./grenxbaileysaudio.mp3" }, {
 });
 ```
 
-Mengirim lokasi
+Mengirim Lokasi
 
 ```javascript
 await client.sendLocation(m.chat, "Caption", 90.0, 90.0, "https://example.com", "1234567890", {
@@ -395,7 +532,7 @@ await client.sendLocation(m.chat, "Caption", 90.0, 90.0, "https://example.com", 
 });
 ```
 
-Mengirim polling
+Mengirim Polling
 
 ```javascript
 await client.sendPoll(m.chat, "Pilih satu", ["1", "2", "3"], true, {
@@ -414,7 +551,7 @@ await client.sendPoll(m.chat, "Pilih satu", ["1", "2", "3"], true, {
 });
 ```
 
-Mengirim kuis
+Mengirim Kuis
 
 ```javascript
 await client.sendQuiz(m.chat, "Pertanyaan kuis", ["1", "2", "3"], "2", {
@@ -433,7 +570,7 @@ await client.sendQuiz(m.chat, "Pertanyaan kuis", ["1", "2", "3"], "2", {
 });
 ```
 
-Mengirim status mention
+Mengirim Status Mention
 
 ```javascript
 await client.statusMention(m.chat, {
@@ -449,20 +586,38 @@ Fitur Gabungan (1.1.0)
 
 GrenXbaileys 1.1.0 menggabungkan lapisan tambahan dari fork wbails di atas inti GrenXbaileys:
 
-· Lapisan privasi, interop, GraphQL/Wamo, dan message-builder sock.* (lihat lib/Socket/privacy.js, interop.js, graphql.js, message-builder.js)
-· Protokol USync tambahan: business, picture, text status, sidelist, feature (lib/WAUSync/)
-· Pesan sticker pack ({ stickerPacks: {...} }) dan helper metadata stiker (lib/Utils/sticker.js, membutuhkan ffmpeg di PATH untuk konversi stiker)
-· useSqliteAuthState (membutuhkan Node 22.5+ karena memakai node:sqlite; dimuat secara lazy, jadi Node 20 tidak terpengaruh kecuali kamu memanggilnya)
-· Helper persistensi makeInMemoryStore: writeToFile, readFromFile, writeToFileInterval
-· Fallback cstoken 1:1: menyimpan salt NCT dari sinkronisasi app-state dan melampirkan cstoken pada pengiriman privat yang tidak memiliki tctoken. Nonaktifkan per pesan dengan { cstoken: false }.
+· Lapisan privasi, interop, GraphQL/Wamo, dan message-builder sock.* (lihat
+  lib/Socket/privacy.js, interop.js, graphql.js, message-builder.js).
+· Protokol USync tambahan: business, picture, text status, sidelist, feature (lib/WAUSync/).
+· Pesan sticker pack ({ stickerPacks: {...} }) dan helper metadata stiker
+  (lib/Utils/sticker.js, membutuhkan ffmpeg di PATH untuk konversi stiker).
+· useSqliteAuthState (membutuhkan Node 22.5+ karena memakai node:sqlite; dimuat secara lazy,
+  jadi Node 20 tidak terpengaruh kecuali kamu memanggilnya).
+· Helper persistensi makeInMemoryStore: writeToFile, readFromFile, writeToFileInterval.
+· Fallback cstoken 1:1: menyimpan salt NCT dari sinkronisasi app-state dan melampirkan cstoken
+  pada pengiriman privat yang tidak memiliki tctoken. Nonaktifkan per pesan dengan
+  { cstoken: false }.
 
 Implementasi newsletter adalah milik WaBail (lib/Socket/newsletter.js) dan dipakai tanpa perubahan.
 
-Catatan chat pribadi vs grup
+Fitur Baru di Versi Ini
 
-· Balas ke msg.key.remoteJid apa adanya. Di chat pribadi bisa berupa @lid; bentuk nomor telepon ada di msg.key.remoteJidAlt.
+· Anti-Ban Sender: deteksi otomatis banned/restricted/blocked, lepas sender, dan peringatan
+  user lewat event connection.update. Lihat Anti-Ban Sender.
+· Keep-Alive Lebih Toleran: timeout limit diperpanjang dan kegagalan ping tidak langsung
+  memutus koneksi. Lihat Keep-Alive & Reconnect.
+
+---
+
+Catatan Chat Pribadi vs Grup
+
+· Balas ke msg.key.remoteJid apa adanya. Di chat pribadi bisa berupa @lid; bentuk nomor
+  telepon ada di msg.key.remoteJidAlt.
 · Di grup, pengirim adalah msg.key.participant (alternatifnya di msg.key.participantAlt).
-· Jika pengiriman ke pengguna tidak dapat menemukan perangkat penerima, relayMessage sekarang melempar 421 alih-alih diam-diam melaporkan sukses.
+· Jika pengiriman ke pengguna tidak dapat menemukan perangkat penerima, relayMessage sekarang
+  melempar 421 alih-alih diam-diam melaporkan sukses.
+
+---
 
 Kredit
 
@@ -471,13 +626,17 @@ Adhiraj Singh dan dikelola oleh komunitas WhiskeySockets.
 Semua kredit untuk implementasi protokol dasar diberikan kepada penulis dan kontributor asli.
 Lihat LICENSE untuk teks lisensi lengkap dan pemberitahuan hak cipta.
 
+---
+
 Kontribusi
 
 Lihat CONTRIBUTING.md untuk panduan melaporkan masalah dan mengirim pull request.
+
+---
 
 Disclaimer
 
 Ini bukan produk resmi WhatsApp. Penggunaan library ini untuk mengirim pesan massal atau tidak diminta
 dapat melanggar Ketentuan Layanan WhatsApp dan dapat menyebabkan nomor kamu diblokir. Gunakan dengan bijak.
 
----
+```
