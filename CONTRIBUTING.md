@@ -1,13 +1,14 @@
-# Contributing to PouCode
+```markdown
+# Contributing to GrenXbaileys
 
-Thanks for your interest in contributing! PouCode is a fork of
+Thanks for your interest in contributing! GrenXbaileys is a fork of
 [Baileys](https://github.com/WhiskeySockets/Baileys); contributions here follow
 similar conventions to the upstream project.
 
 ## Reporting issues
 
 - Search existing issues before opening a new one.
-- Include: Node.js version, `@poucode/baileys` version, a minimal reproduction,
+- Include: Node.js version, `@grenxbaileys/baileys` version, a minimal reproduction,
   and the relevant log output (with sensitive data like phone numbers redacted).
 
 ## Submitting changes
@@ -22,19 +23,21 @@ similar conventions to the upstream project.
 ## Development setup
 
 ```bash
-git clone https://github.com/poucode/baileys.git
-cd baileys
+git clone https://github.com/GrenXbaileys/GrenXbaileys.git
+cd GrenXbaileys
 npm install
 npm run build:tsc
 npm test
 ```
 
-## Code of conduct
+Code of conduct
 
 Be respectful and constructive. Disagreements about implementation are fine;
 personal attacks are not. Issues or PRs that violate this will be closed.
 
-## License
+License
 
 By contributing, you agree that your contributions will be licensed under the
-project's [MIT License](LICENSE).
+project's MIT License.
+
+```
