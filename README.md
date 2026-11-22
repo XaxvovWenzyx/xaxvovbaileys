@@ -1,8 +1,7 @@
-
-<div align='center'>GrenXbaileys</div>
+<div align='center'>xaxvovbaileys</div>
 
 <p align="center">
-  <img src="https://ganga--link--ghhzdp9sv8hk.code.run/i/6r8d73n1.jpg" width="180" alt="GrenXbaileys"/>
+  <img src="https://ganga--link--ghhzdp9sv8hk.code.run/i/20rknq5imi.jpg" width="180" alt="xaxvovbaileys"/>
 </p>
 
 ---
@@ -12,7 +11,7 @@
 ![source](https://img.shields.io/badge/source-GitHub-black.svg)
 ![node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)
 
-Pustaka WebSockets untuk berinteraksi dengan WhatsApp Web, dikelola dengan merek GrenXbaileys.
+Pustaka WebSockets untuk berinteraksi dengan WhatsApp Web, dikelola dengan merek xaxvovbaileys.
 Proyek ini merupakan fork yang dibangun di atas Baileys oleh WhiskeySockets.
 
 </div>
@@ -44,20 +43,20 @@ Membutuhkan Node.js 20+ (paket ini hanya ESM; lihat [Impor](#impor)).
 Dari npm registry (setelah dipublikasikan):
 
 ```bash
-npm install @grenxbaileys/baileys
+npm install @xaxvovbaileys/baileys
 ```
 
 Langsung dari GitHub:
 
 ```bash
-npm install github:GrenXbaileys/Baileys
+npm install github:XaxvovWenzyx/xaxvovbaileys
 ```
 
 Atau tambahkan ke package.json secara manual:
 
 ```json
 "dependencies": {
-  "@grenxbaileys/baileys": "latest"
+  "@xaxvovbaileys/baileys": "latest"
 }
 ```
 
@@ -67,7 +66,7 @@ mengarah ke fork ini:
 
 ```json
 "dependencies": {
-  "@whiskeysockets/baileys": "npm:@grenxbaileys/baileys"
+  "@whiskeysockets/baileys": "github:XaxvovWenzyx/xaxvovbaileys",
 }
 ```
 
@@ -77,7 +76,7 @@ mengarahkannya ke fork ini di balik layar.
 Kamu juga bisa pin ke branch atau commit tertentu:
 
 ```bash
-npm install github:GrenXbaileys/Baileys#main
+npm install github:XaxvovWenzyx/xaxvovbaileys#main
 ```
 
 ---
@@ -87,7 +86,7 @@ Impor
 ESM (berfungsi di semua versi Node.js yang didukung):
 
 ```javascript
-import makeWASocket, { Browsers, DisconnectReason } from '@grenxbaileys/baileys';
+import makeWASocket, { Browsers, DisconnectReason } from '@xaxvovbaileys/baileys';
 ```
 
 CommonJS: paket ini hanya ESM, jadi require() hanya berfungsi di Node.js 22.12+ atau 20.19+
@@ -97,7 +96,7 @@ CommonJS: paket ini hanya ESM, jadi require() hanya berfungsi di Node.js 22.12+ 
 const {
   default: makeWASocket,
   // ekspor lainnya
-} = require('@grenxbaileys/baileys');
+} = require('@xaxvovbaileys/baileys');
 ```
 
 ---
@@ -110,7 +109,7 @@ Dengan QR Code
 const {
   default: makeWASocket,
   Browsers
-} = require('@grenxbaileys/baileys');
+} = require('@xaxvovbaileys/baileys');
 
 const client = makeWASocket({
   browser: Browsers.grenxbaileys('Chrome')
@@ -131,7 +130,7 @@ const {
   default: makeWASocket,
   fetchLatestWAWebVersion,
   Browsers
-} = require('@grenxbaileys/baileys');
+} = require('@xaxvovbaileys/baileys');
 
 async function start() {
   // fetchLatestWAWebVersion() menghasilkan { version, isLatest, error? }
@@ -312,21 +311,21 @@ login ke akun yang sama). Ini tidak memengaruhi pengiriman ke penerima.
 ```javascript
 // Dikirim ke penerima, tetapi TIDAK disinkronkan ke perangkat lain milikmu
 await client.relayMessage(m.chat, {
-  conversation: "Hello from GrenXbaileys"
+  conversation: "Hello from xaxvovbaileys"
 }, {
   noSelfSync: true
 });
 
 // Dikirim ke penerima DAN disinkronkan ke perangkat lain milikmu (perilaku default)
 await client.relayMessage(m.chat, {
-  conversation: "Hello from GrenXbaileys"
+  conversation: "Hello from xaxvovbaileys"
 }, {
   noSelfSync: false
 });
 
 // Juga berfungsi melalui sendMessage
 await client.sendMessage(m.chat, {
-  text: "Hello from GrenXbaileys"
+  text: "Hello from xaxvovbaileys"
 }, {
   noSelfSync: true
 });
