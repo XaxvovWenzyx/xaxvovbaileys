@@ -33,6 +33,8 @@ Proyek ini merupakan fork yang dibangun di atas Baileys oleh WhiskeySockets.
 - [Kredit](#kredit)
 - [Kontribusi](#kontribusi)
 - [Disclaimer](#disclaimer)
+- [enjoy to my baileys brother)
+- [Thank you for the users who have been loyal to Xaxvovbaileys)
 
 ---
 
